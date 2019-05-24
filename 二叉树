@@ -1,0 +1,211 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define TRUE 1
+#define FALSE 0
+#define OK 1
+#define ERROR 0
+#define OVERFLOW -1
+#define SUCCESS 1
+#define UNSUCCESS 0
+#define N 50
+
+typedef char TElemType;
+typedef char ElemType;
+typedef int Status;
+
+typedef struct BiTNode
+{
+    TElemType data;
+    struct BiTNode *lchild, *rchild;
+}BiTNode, *BiTree;
+
+typedef struct LNode
+{
+	ElemType data;
+	struct LNode *next;
+}LNode, *LinkList;
+
+
+BiTree CreateBiTree(char pre[], char mid[], int len);	//初始化栈
+int INPUT(char pre[N], char mid[N]);					//用户输入先序和中序序列
+void postTraverse(BiTree tree);							//后序序列
+void createLNode(BiTree T, LinkList L);			        //建立叶子节点单链表
+void GETLNode(LinkList L, ElemType c);                  //建立单链表内函数
+int LevelWidth(BiTree T, int C);						//二叉树某层宽度
+int Width(BiTree T, int level);							//二叉树最大宽度
+int Depth(BiTree T);									//二叉树深度
+int putRootofx(BiTree T, char x);						//求任意节点父节点
+
+int main()
+{
+	char pre[N], mid[N];
+	int n;
+	n = INPUT(pre, mid);
+	BiTree T = CreateBiTree(pre, mid, n);
+	printf("后序序列:");
+	postTraverse(T);
+	printf("\n");
+
+	LinkList L = (LinkList)malloc(sizeof(LNode));
+	L->data = '|';
+	L->next = NULL;
+	createLNode(T, L);
+	LinkList p = L;
+	printf("叶子节点:");
+	for(p = p->next;p;)
+    {
+        printf("%c ",p->data);
+        p = p->next;
+    }
+    printf("\n");
+
+    int x;
+    x = Depth(T);
+    printf("二叉树的宽度为:%d\n",Width(T, x));
+    //secessful
+
+    //Fundpoint(T);
+    char e;
+    printf("请输入所要查找的节点:");
+    while(getchar() != '\n');
+    scanf("%c", &e);
+    putRootofx(T, e);
+
+	return 0;
+}
+
+int INPUT(char pre[N], char mid[N])
+{
+	int i = 0, j = 0;
+	printf("请输入树的先序序列(以/为结束标志符):");
+	for(;i<N;++i)
+	{
+		scanf("%c", &pre[i]);
+		if(pre[i] == '/')
+			break;
+	}
+	getchar();
+	printf("请输入树的中序序列:");
+	for(;j<i;++j)
+	{
+		scanf("%c", &mid[j]);
+	}
+	return j;
+}
+
+BiTree CreateBiTree(char pre[], char mid[], int len)
+{
+    int i;
+    if(!len)
+    {
+        return NULL;
+    }
+    BiTree T;
+    for(i = 0; i < len; i++)
+    {
+        if(pre[0] == mid[i])
+            break;
+    }
+    T = (BiTree)malloc(sizeof(BiTNode));
+    T -> data = pre[0];
+    T -> lchild = CreateBiTree(pre + 1, mid, i);
+    T -> rchild = CreateBiTree(pre + 1 + i, mid + 1 + i, len - i - 1);
+    return T;
+}
+
+void postTraverse(BiTree tree)
+{
+    if (tree->lchild != NULL) postTraverse(tree->lchild);
+    if (tree->rchild != NULL) postTraverse(tree->rchild);
+    printf("%c ",tree->data);
+}
+
+void createLNode(BiTree T, LinkList L)
+{
+	if(!T)
+		goto end;
+	if(T->rchild == NULL && T->lchild == NULL)
+	{
+		GETLNode(L, T->data);
+	}
+	createLNode(T->rchild, L);
+	createLNode(T->lchild, L);
+	end:;
+}
+
+void GETLNode(LinkList L, ElemType c)
+{
+    LinkList p = L;
+    LinkList s = (LinkList)malloc(sizeof(LNode));
+    s->data = c;
+    s->next = p->next;
+    p->next = s;
+}
+
+int Depth(BiTree T)
+{
+    int L, R;
+    if(!T)
+        return 0;
+    else
+    {
+        L = Depth(T->lchild);
+        R = Depth(T->rchild);
+    }
+    return (((L>R)?L:R)+1);
+}
+
+int LevelWidth(BiTree T, int C)
+{
+    if(T == NULL)
+    {
+        return 0;
+    }
+    else
+    {
+        if(C == 1)
+        return 1;
+        C = LevelWidth(T->lchild, C-1) + LevelWidth(T->rchild, C-1);
+    }
+    return C;
+}
+
+int Width(BiTree T, int level)
+{
+    int a[N];
+    int i = 0, width = 0;
+    for(; i < N;++i)
+    {
+        a[i] = 0;
+    }
+    for(i = 0; i < level; ++i)
+    {
+        a[i] = LevelWidth(T, i+1);
+    }
+    for(i = 0; a[i]; ++i)
+    {
+        if(a[i]>width)
+            width = a[i];
+    }
+    return width;
+}
+
+int putRootofx(BiTree T, char x)
+{
+    if(!T)
+        return 0;
+    if(T->data == x)
+    {
+        return 1;
+    }
+    if(T)
+    {
+        if(putRootofx(T->lchild, x) || putRootofx(T->rchild, x))
+        {
+            printf("%c ",T->data);
+            return 1;
+        }
+    }
+    return 0;
+}
