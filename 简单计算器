@@ -1,0 +1,385 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define OK 1
+#define ERROR 0
+#define OVERFLOW -1
+#define N 50
+
+typedef char ElemType;
+typedef int Status;
+
+typedef struct StackNode//字符栈
+{
+    ElemType data;
+    struct StackNode *next;
+}StackNode, *LinkStackPtr;
+typedef struct Stack
+{
+    LinkStackPtr top;
+    int count;
+}Stack, *LinkStack;
+
+typedef struct RnumberStackNode//实数栈
+{
+    float data;
+    struct RnumberStackNode *next;
+}RnumberStackNode, *RnumberLinkStackPtr;
+typedef struct RnumberStack
+{
+    RnumberLinkStackPtr top;
+    int count;
+}RnumberStack, *RnumberLinkStack;
+
+//字符栈相关函数
+int Expression(char c[N]);                                     //输入中缀表达式
+void InitStack(LinkStack S);                                   //初始化栈
+Status StackEmpty(LinkStack s);                                //栈是否为空
+Status Push(LinkStack S, ElemType e);                          //进栈
+Status Pop(LinkStack S, ElemType *e);                          //出栈
+ElemType GetTop(LinkStack S);                                  //得到栈顶元素
+void CompareSymbol(ElemType x, ElemType y, ElemType *e);       //运算符优先级
+Status Transfer(ElemType c[N]);                                //中缀变后缀
+Status Assignment_of_variables(ElemType c[N], float Int[N]);   //变量赋值
+float Samplecaculation(float y, float x, ElemType e);          //两数间简单运算
+float Calculation(ElemType c[N], float Int[N]);                //表达式计算
+
+//实数栈相关函数
+void RInitStack(RnumberLinkStack RS)//初始化
+{
+    RS->top = (RnumberLinkStackPtr)malloc(sizeof(RnumberStackNode));
+    if(!RS->top)
+        exit(OVERFLOW);
+    RS->top = NULL;
+    RS->count = 0;
+}
+Status RSatckEmtpy(RnumberLinkStack RS)
+{
+    if(!RS->count)
+        return OK;
+    else
+        return ERROR;
+}
+Status RPop(RnumberLinkStack RS, float *f)
+{
+    RnumberLinkStackPtr R = (RnumberLinkStackPtr)malloc(sizeof(RnumberStackNode));
+    if(!R)
+        exit(OVERFLOW);
+    R = RS->top;
+    *f = R->data;
+    RS->top = R->next;
+    RS->count--;
+    free(R);
+    return OK;
+}
+Status RPush(RnumberLinkStack RS, float f)
+{
+    RnumberLinkStackPtr R = (RnumberLinkStackPtr)malloc(sizeof(RnumberStackNode));
+    if(!R)
+        exit(OVERFLOW);
+    R->data = f;
+    R->next = RS->top;
+    RS->top = R;
+    RS->count++;
+    return OK;
+}
+
+int main()
+{
+    int i = 0, a, j = 0;
+    ElemType c[N];
+    float Int[N];
+    printf("*********************************\n");
+    printf("* 按照下列提示操作:             *\n");
+    printf("* 退出:0                        *\n");
+    printf("* 中缀变后缀:1                  *\n");
+    printf("* 变量赋值计算:2                *\n");
+    printf("*********************************\n");
+    for(; i<N; ++i)
+    {
+        printf("你所要进行的操作:");
+        scanf("%d",&a);
+        getchar();
+        switch(a)
+        {
+            case 0:
+                goto end;
+            case 1:
+                ++j;
+                Expression(c);
+                Transfer(c);
+                printf("\n");
+                break;
+            case 2:
+                if(!j)
+                {
+                    --j;
+                    printf("请先输入表达式后再进行此操作!\n");
+                    break;
+                }
+                else
+                {
+                    Assignment_of_variables(c, Int);
+                    printf("结果为%.2f\n",Calculation(c, Int));
+                    break;
+                }
+            default:
+                printf("操作错误!\n");
+                break;
+        }
+    }
+    end:;
+    return 0;
+}
+
+int Expression(ElemType c[N])
+{
+	int i = 0;
+	printf("请输入表达式(不要在字符间插入空格,例如:a*b+c):");
+	for(;i<N;++i)
+	{
+		scanf("%c",&c[i]);
+		if(c[i] == '\n')
+			break;
+	}
+	return i;
+}
+
+void InitStack(LinkStack S)
+{
+    S->top = (LinkStackPtr)malloc(sizeof(StackNode));
+    if(!S->top)
+        exit(OVERFLOW);
+    S->top = NULL;
+    S->count = 0;
+}
+
+Status StackEmpty(LinkStack s)
+{
+    if(s->count == 0)
+        return OK;
+    else
+        return ERROR;
+}
+
+Status Push(LinkStack S, ElemType e)
+{
+    LinkStackPtr p = (LinkStackPtr)malloc(sizeof(StackNode));
+    if(!p)
+        exit(OVERFLOW);
+    p->data = e;
+    p->next = S->top;
+    S->top = p;
+    S->count++;
+    return OK;
+}
+
+Status Pop(LinkStack S, ElemType *e)
+{
+    if(!StackEmpty(S))//栈非空
+    {
+        LinkStackPtr p = (LinkStackPtr)malloc(sizeof(StackNode));
+        if(!p)
+            exit(OVERFLOW);
+        p = S->top;
+        *e = p->data;
+        S->top = p->next;
+        S->count--;
+        free(p);
+        return OK;
+    }
+    else
+        return ERROR;
+}
+
+ElemType GetTop(LinkStack S)
+{
+    if(!StackEmpty(S))
+        return S->top->data;
+    else
+        exit(OVERFLOW);
+}
+
+void CompareSymbol(ElemType x, ElemType y, ElemType *e)
+{
+    if(x == '+' || x == '-')
+    {
+        if(y == '+' || y == '-' || y == ')' || y == '#')
+            *e = '>';
+        else
+            *e = '<';
+    }
+    else if(x == '*' || x == '/')
+    {
+        if(y == '(')
+            *e = '<';
+        else
+            *e = '>';
+    }
+    else if(x == '(')
+    {
+        if(y == ')')
+            *e = '=';
+        else
+            *e = '<';
+    }
+    else if(x == ')')
+    {
+        *e = '>';
+    }
+    else if(x == '#')
+    {
+        if(y == '#')
+            *e = '=';
+        else
+            *e = '<';
+    }
+}
+
+Status InOperator(ElemType c[6], ElemType e)    //判断运算符
+{
+    int i = 0;
+    for(;i<6;++i)
+    {
+        if(c[i] == e)
+            return OK;
+    }
+    return ERROR;
+}
+
+Status Transfer(ElemType c[N])
+{
+    Stack S;
+    int i;
+    ElemType e, com;
+    ElemType Operator[6] = {'+','-','*','/','(',')'};
+    InitStack(&S);
+    for(i = 0; c[i] != '\n'; ++i)
+    {
+        if(InOperator(Operator, c[i]))
+        {
+            if(StackEmpty(&S))//栈空
+                Push(&S, c[i]);
+            else
+            {
+                com = 'X';
+                CompareSymbol(GetTop(&S), c[i], &com);
+                switch(com)
+                {
+                    case '>':
+                        Pop(&S, &e);
+                        if(e != '(' && e != ')')
+                            printf("%c",e);
+                        Push(&S, c[i]);
+                        break;
+                    case '<':
+                        Push(&S, c[i]);
+                        break;
+                    case '=':
+                        Pop(&S, &e);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        else
+            printf("%c",c[i]);
+    }
+    while(!StackEmpty(&S))
+    {
+        Pop(&S, &e);
+        if(e != '(' && e != ')')
+            printf("%c",e);
+    }
+    return OK;
+}
+
+Status Assignment_of_variables(ElemType c[N], float Int[N])
+{
+    int i;
+    ElemType Operator[6] = {'+','-','*','/','(',')'};
+    for(i = 0;c[i] != '\n';++i)
+    {
+        if(!InOperator(Operator, c[i]))//不是运算符
+        {
+            printf("%c=", c[i]);
+            scanf("%f", &Int[i]);
+            getchar();
+        }
+    }
+    return OK;
+}
+
+float Calculation(ElemType c[N], float Int[N])//problem
+{
+    Stack OPTR;
+    InitStack(&OPTR);
+    RnumberStack OPND;
+    RInitStack(&OPND);
+    int i = 0;
+    ElemType Operator[6] = {'+','-','*','/','(',')'};
+    ElemType com, e;
+    float a, b;
+    Push(&OPTR, '#');
+    for(i = 0; c[i] != '\n'; ++i)
+    {
+        if(!InOperator(Operator, c[i]))
+            {
+                RPush(&OPND, Int[i]);
+                //printf("数进栈!\n");
+            }
+        else
+        {
+            CompareSymbol(GetTop(&OPTR), c[i], &com);
+            switch(com)
+            {
+                case '<':
+                    //printf("< 运算符%c进栈\n",c[i]);
+                    Push(&OPTR, c[i]);
+                    break;
+                case '=':
+                    Pop(&OPTR, &e);
+                    //printf("= 运算符%c出栈\n",e);
+                    break;
+                case '>':
+                    //printf("> ");
+                    Pop(&OPTR, &e);//printf("运算符%c出栈\n",e);
+                    RPop(&OPND, &b);//printf("操作数%.0f出栈\n",b);
+                    RPop(&OPND, &a);//printf("操作数%.0f出栈\n",a);
+                    RPush(&OPND,Samplecaculation(a, b, e));--i;//printf("运算结果数进栈\n");
+                    break;
+            }
+        }
+    }
+    while(OPTR.count != 1)
+    {
+        //printf("最后\n");
+        Pop(&OPTR, &e);//printf("运算符%c出栈\n",e);
+        RPop(&OPND, &b);//printf("操作数%.0f出栈\n",b);
+        RPop(&OPND, &a);//printf("操作数%.0f出栈\n",a);
+        RPush(&OPND,Samplecaculation(a, b, e));//printf("运算结果数进栈\n");
+    }
+    RPop(&OPND, &a);
+    return a;//返回计算结果
+}
+
+float Samplecaculation(float y, float x, ElemType e)
+{
+    switch(e)
+    {
+        case '*':return x*y;break;
+        case '/':if(x == 0)
+                 {
+                     printf("输入数值错误，蕴含除零运算！");
+                     exit(OVERFLOW);
+                 }
+                 else
+                 {
+                     return y/x;
+                 }break;
+        case '+':return x+y;break;
+        case '-':return y-x;break;
+        default:exit(OVERFLOW);break;
+    }
+}
